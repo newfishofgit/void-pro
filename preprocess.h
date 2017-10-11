@@ -1,10 +1,10 @@
 #ifndef _pretreatment_H
 #define _pretreatment_H
 
-#include "global_variables.h"
-#include "read_GMN.h"
+//#include "global_variables.h"
+//#include "read_GMN.h"
 #include "read_GMO.h"
-#include "iono_interpolation.h"
+//#include "iono_interpolation.h"
 #include "brdc_orb.h"
 #include "read_dcb.h"
 
@@ -15,7 +15,7 @@ typedef struct tag_carrier_range
 	double P1, P2, L1, L2;
 	double P4, L4;
 	double SP4, Leveled_L4;
-	IPP ipp0;
+	//IPP ipp0;
 	bool flag;
 	tag_carrier_range()
 	{
@@ -71,29 +71,35 @@ typedef struct tag_QC
 typedef struct tag_tec
 {
 	GMJulianDay mjd;
-	int isate;
-	int isite;
+	//int isate;
+    int prn;
+	//int isite;
+    string site;
 	double stec; //stec, unit - m
-	double weig;
-	IPP ipp0;
+	//double weig;
+	//IPP ipp0;
 	bool flag;
 	tag_tec()
 	{
-		isate = isite = -1;
+		//isate = isite = -1;
+        prn = 0;
 		stec = 0.0;
-		weig = 0.0;
+		//weig = 0.0;
 		flag = true;
 	}
 }TEC;
 
 //pretreatment
-int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs);
+//int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs);
+int preprocess(vector<string> obslst, vector<TEC> &Tecs);
 //set data of current epoch
-bool set_cur_data(GMJulianDay end_mjd, vector<TEC> &all_TECs, vector<TEC> &tecs);
+//bool set_cur_data(GMJulianDay end_mjd, vector<TEC> &all_TECs, vector<TEC> &tecs);
 //get multi-L4 , no data return false
-bool get_ML(GMO gmo_data, GMN gmn_data, int obs_type[], vector<Epoch_Obs> &all_ML);
+//bool get_ML(GMO gmo_data, GMN gmn_data, int obs_type[], vector<Epoch_Obs> &all_ML);
+
+bool get_ML(GMO gmo_data, int obs_type[], vector<Epoch_Obs> &all_ML);
 //get other value in L4
-void count_ML(GMN gmn_data, CRDCARTESIAN site, vector<Epoch_Obs> &all_ML);
+//void count_ML(GMN gmn_data, CRDCARTESIAN site, vector<Epoch_Obs> &all_ML);
 //get arc
 bool get_arc(vector<Epoch_Obs> all_ML, Arc arcs[]);
 //delete arc whose length is too short
@@ -107,7 +113,7 @@ void standard_leveled(vector<Epoch_Obs> &all_ML, Arc arcs[]);
 //remove bad L4, return sum of valid data
 void remove_bad_obs(vector<Epoch_Obs> &all_ML, Arc arcs[]);
 //get weight
-double get_weig(double elevation);
+//double get_weig(double elevation);
 //get interval
 double get_dt(UTTime last_t, UTTime next_t);
 //get observation of given epoch

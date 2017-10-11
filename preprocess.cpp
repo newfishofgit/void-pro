@@ -1,8 +1,9 @@
 
 #include "preprocess.h"
-#include "brdc_orb.h"
+#include<sstream>
+//#include "brdc_orb.h"
 
-double get_weig(double elevation)
+/*double get_weig(double elevation)
 {
 	double sigObs = 0.002;
 	double p4sigSquare = 2.0*sigObs*sigObs;
@@ -12,12 +13,12 @@ double get_weig(double elevation)
 
 
 	return P;
-}
+}*/
 
-int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs)
-{
-	int file_sum = obslst.size();
-	if(file_sum == 0)
+//int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs) {
+int preprocess(vector<string> obslst, vector<TEC> &Tecs) {
+
+    if(obslst.size() == 0)
 	{
 		cout<<"no observation file!"<<endl;
 		return 0;
@@ -25,17 +26,16 @@ int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs
 	vector<TEC>().swap(Tecs);//clear data of last interval
 
 	//read file record
-	file_sum = obslst.size();
-	for(int file_num = 0;file_num<file_sum;file_num++)
+    for(int file_num = 0;file_num<obslst.size();file_num++)
 	{
 		GMO gmo_data;
 		//observation station name
 		int length = obslst[file_num].length();
-		if(strlen(obslst[file_num].c_str()) < 12)
-			continue;
+		/*if(strlen(obslst[file_num].c_str()) < 12)
+			continue;*/
 
 		string site_name = obslst[file_num].substr(length-12, 4);
-		cout<<"begin to read navigation file : "<<obslst[file_num].substr(length-12,12).c_str()<<endl;
+        cout<<"begin to read observation file : "<<obslst[file_num].substr(length-12,12).c_str()<<endl;
 		if(!GMOReader::read_GMO(obslst[file_num], &gmo_data))
 		{
 			cout<<"can't read file "<<obslst[file_num].c_str()<<endl;
@@ -43,47 +43,76 @@ int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs
 		}
 		if(gmo_data.record.size() == 0)
 			continue;
-		if(gmo_data.header.approx_pos.x == 0 || gmo_data.header.approx_pos.y == 0 || gmo_data.header.approx_pos.z == 0)
+        //approx coor
+		/*if(gmo_data.header.approx_pos.x == 0 || gmo_data.header.approx_pos.y == 0 || gmo_data.header.approx_pos.z == 0)
 		{
 			int str_l = obslst[file_num].length();
 			cout<<endl<<"site "<<site_name.c_str()<<" has no X,Y,Z";
 			continue;
-		}
+		}*/
 		cout<<"read file successfully, the number of epoch is "<<gmo_data.record.size()<<endl;
 
 		//GPS observation type
 		int obs_type[4];
 		for(int i = 0;i<4;i++) obs_type[i] = -1;
-		int type_sum = gmo_data.header.obs_types[0].sum_obs_type;
+		//int type_sum = gmo_data.header.obs_types[0].sum_obs_type;
+        int designated;
+        int type_sum = gmo_data.header.obs_types.return_designated_sum_obs_type('G',designated);
 		for(int i = 0;i<type_sum;i++)
 		{
 			if(gmo_data.header.rinex_version < 3.0)
 			{
-				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "C1"))
+				/*if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "C1"))
 					obs_type[0] = i;
 				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "P2"))
 					obs_type[1] = i;
 				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "L1"))
 					obs_type[2] = i;
 				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "L2"))
-					obs_type[3] = i;
+                obs_type[3] = i;*/
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "C1")) {
+                    obs_type[0] = i;
+                }
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "P2")) {
+                    obs_type[1] = i;
+                }
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "L1")) {
+                    obs_type[2] = i;
+                }
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "L2")) {
+                    obs_type[3] = i;
+                }
 			}
 			else if(gmo_data.header.rinex_version >= 3.0)
 			{
-				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "C1C"))
+				/*if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "C1C"))
 					obs_type[0] = i;
 				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "C2W"))
 					obs_type[1] = i;
 				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "L1C"))
 					obs_type[2] = i;
 				if(!strcmp(gmo_data.header.obs_types[0].obs_type[i].c_str(), "L2W"))
-					obs_type[3] = i;
+					obs_type[3] = i;*/
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "C1C")) {
+                    obs_type[0] = i;
+                }
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "C2W")) {
+                    obs_type[1] = i;
+                }
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "L1C")) {
+                    obs_type[2] = i;
+                }
+                if(!strcmp(gmo_data.header.obs_types.obs_type[designated].meas_type[i].c_str(), "L2W")) {
+                    obs_type[3] = i;
+                }
+
 			}
 		}
 		if(obs_type[0] == -1 || obs_type[1] == -1 || obs_type[2] == -1 || obs_type[3] == -1) continue;
 
 		vector<Epoch_Obs> all_ML;
-		if(!get_ML(gmo_data, gmn_data, obs_type, all_ML))
+		//if(!get_ML(gmo_data, gmn_data, obs_type, all_ML))
+        if(!get_ML(gmo_data , obs_type, all_ML))
 			continue;
 		else
 		{
@@ -101,15 +130,18 @@ int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs
 					TEC one_tec;
 					double stec, weig, site_dcb;
 					int isate;
-					weig = get_weig(L4.ipp0.E);
-					vector<string>::iterator it = find(dcbs->sitename.begin(), dcbs->sitename.end(), site_name);
+                    //ipp0
+					//weig = get_weig(L4.ipp0.E);
+                    //
+                    //get DCB
+					/*vector<string>::iterator it = find(dcbs->sitename.begin(), dcbs->sitename.end(), site_name);
 					if(it == dcbs->sitename.end())
 					{
 						cout<<endl<<"site "<<site_name.c_str()<<" don't have hardware information!"<<endl;
 						continue;
 					}
 					else
-						site_dcb = dcbs->site_dcb[it - dcbs->sitename.begin()];
+						site_dcb = dcbs->site_dcb[it - dcbs->sitename.begin()];*/
 					vector<int>::iterator it2 = find(g_prnlist.begin(), g_prnlist.end(), iprn+1);
 					if(it2 == g_prnlist.end())
 					{
@@ -118,17 +150,21 @@ int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs
 					}
 					else
 						isate = it2 - g_prnlist.begin();
-					stec = L4.SP4 - (dcbs->sate_dcb[iprn] + site_dcb) * NS2M;
+					//stec = L4.SP4 - (dcbs->sate_dcb[iprn] + site_dcb) * NS2M;
+                    stec = L4.SP4;
+                    stec = stec/TEC2M;
 					//cause weig is for P observation, so unit is m
 					GMJulianDay mjd;
 					CommonTimeToMJulianDay(&all_ML[iepch].epoch, &mjd);
 
 					one_tec.flag = true;
 					one_tec.mjd = mjd;
-					one_tec.isate = isate;
-					one_tec.isite = g_sitelist.size() - 1;
-					one_tec.weig = weig;
-					one_tec.ipp0 = L4.ipp0;
+					//one_tec.isate = isate;
+                    one_tec.prn = iprn+1;
+					//one_tec.isite = g_sitelist.size() - 1;
+                    one_tec.site = site_name;
+					//one_tec.weig = weig;
+					//one_tec.ipp0 = L4.ipp0;
 					one_tec.stec = stec;
 					Tecs.push_back(one_tec);
 				}
@@ -140,7 +176,7 @@ int preprocess(vector<string> obslst, GMN gmn_data, DCB *dcbs, vector<TEC> &Tecs
 	return 1;
 }
 
-bool set_cur_data(GMJulianDay end_mjd, vector<TEC> &all_TECs, vector<TEC> &tecs)
+/*bool set_cur_data(GMJulianDay end_mjd, vector<TEC> &all_TECs, vector<TEC> &tecs)
 {
 	int tec_size = all_TECs.size();
 	for(int i = 0;i<tec_size;i++)
@@ -153,7 +189,7 @@ bool set_cur_data(GMJulianDay end_mjd, vector<TEC> &all_TECs, vector<TEC> &tecs)
 		return false;
 	return true;
 }
-
+*/
 void output_obs(StationObs obs[], int mode)
 {
 	if(mode == 1) //2 stations, smoothed P4, integer-leveled L4 & relative-error
@@ -178,7 +214,7 @@ void output_obs(StationObs obs[], int mode)
 						continue;
 					UTTime epoch = all_ML[i].epoch;
 					double second = epoch.Hour*3600 + epoch.Minute*60 + epoch.Second;
-					fprintf(fp, "%8.1lf   %02d%14.1lf%14.1lf%14.1lf%14.1lf%8.3lf%10.3lf%8.3lf%8.3lf\n", second, iprn+1, 
+					fprintf(fp, "%8.1lf   %02d%14.1lf%14.1lf%14.1lf%14.1lf%8.3lf%10.3lf%8.3lf%8.3lf\n", second, iprn+1,
 						all_ML[i].L4[iprn].P1, all_ML[i].L4[iprn].P2, all_ML[i].L4[iprn].L1, all_ML[i].L4[iprn].L2,
 						all_ML[i].L4[iprn].P4, all_ML[i].L4[iprn].L4, all_ML[i].L4[iprn].SP4,all_ML[i].L4[iprn].Leveled_L4);
 				}
@@ -200,7 +236,7 @@ void output_obs(StationObs obs[], int mode)
 		for(int iepoch = 0;iepoch<epoch_sum;iepoch++)
 		{
 			UTTime epoch = all1[iepoch].epoch;
-			if(!match_obs(epoch, all2, &pos2)) 
+			if(!match_obs(epoch, all2, &pos2))
 			{cout<<"slip"<<endl;continue;}
 			double second = epoch.Hour*3600 + epoch.Minute*60 + epoch.Second;
 			//=======================================================================================
@@ -249,7 +285,7 @@ void output_obs(StationObs obs[], int mode)
 		for(int iepoch = 0;iepoch<epoch_sum;iepoch++)
 		{
 			UTTime epoch = all_std1[iepoch].epoch;
-			if(!match_obs(epoch, all_std2, &pos2)) 
+			if(!match_obs(epoch, all_std2, &pos2))
 			{cout<<"slip"<<endl;continue;}
 			if(!match_obs(epoch, all_itg1, &pos3))
 			{cout<<"slip"<<endl;continue;}
@@ -273,7 +309,7 @@ void output_obs(StationObs obs[], int mode)
 				double relative_SP4 = 0.0;
 				double relative_leveled_L4 = 0.0;
 				double relative_Carrier_Range = 0.0;
-				
+
 				//if(L_std1.flag == false || L_std2.flag == false || L_itg1.flag == false || L_itg2.flag == false)
 				if(L_std1.flag == false || L_std2.flag == false)
 					continue;
@@ -293,7 +329,8 @@ void output_obs(StationObs obs[], int mode)
 	}
 }
 
-bool get_ML(GMO gmo_data, GMN gmn_data, int obs_type[], vector<Epoch_Obs> &all_ML4)
+//bool get_ML(GMO gmo_data, GMN gmn_data, int obs_type[], vector<Epoch_Obs> &all_ML4)
+bool get_ML(GMO gmo_data, int obs_type[], vector<Epoch_Obs> &all_ML4)
 {
 	CRDCARTESIAN sate_position = gmo_data.header.approx_pos;
 	int epoch_sum = gmo_data.record.size();
@@ -303,9 +340,20 @@ bool get_ML(GMO gmo_data, GMN gmn_data, int obs_type[], vector<Epoch_Obs> &all_M
 		epoch_ML4.epoch = gmo_data.record[iepoch].hrd.epoch;
 		for(int iprn = 0;iprn<GPS_NUM;iprn++)
 		{
+            string GPSSAT;
+            stringstream ss;
+            if(iprn + 1 < 10) {
+                ss<<(iprn+1);
+                GPSSAT = "G0"+ss.str();
+            } else {
+                ss<<(iprn+1);
+                GPSSAT = "G"+ss.str();
+            }
 			//find coordinating data number
-			vector<int> prn_list = gmo_data.record[iepoch].hrd.gps_prn;
-			vector<int>::iterator itprn = find(prn_list.begin(), prn_list.end(), iprn+1);
+			//vector<int> prn_list = gmo_data.record[iepoch].hrd.gps_prn;
+            vector<string> prn_list = gmo_data.record[iepoch].hrd.sat_prn;
+			//vector<int>::iterator itprn = find(prn_list.begin(), prn_list.end(), iprn+1);
+            vector<string>::iterator itprn = find(prn_list.begin(), prn_list.end(), GPSSAT);
 			if(itprn == prn_list.end())
 			{
 				continue;
@@ -338,7 +386,7 @@ bool get_ML(GMO gmo_data, GMN gmn_data, int obs_type[], vector<Epoch_Obs> &all_M
 	smooth_P4(all_ML4, arcs);
 	//standard_leveled(all_ML4, arcs);
 	remove_bad_obs(all_ML4, arcs);
-	count_ML(gmn_data, gmo_data.header.approx_pos, all_ML4);
+	//count_ML(gmn_data, gmo_data.header.approx_pos, all_ML4);
 	Arc Parcs[GPS_NUM];
 	if(get_arc(all_ML4, Parcs))
 		return true;
@@ -352,7 +400,7 @@ bool get_ML(GMO gmo_data, GMN gmn_data, int obs_type[], vector<Epoch_Obs> &all_M
 void remove_bad_obs(vector<Epoch_Obs> &all_ML, Arc arcs[])
 {
 	//elevation mask angle -- see count_MLL4
-	
+
 	for(int iprn = 0;iprn<GPS_NUM;iprn++)
 	{
 		int narc = arcs[iprn].arc_pos.size()/2;
@@ -377,7 +425,7 @@ void remove_bad_obs(vector<Epoch_Obs> &all_ML, Arc arcs[])
 	}
 }
 
-void count_ML(GMN gmn_data, CRDCARTESIAN site, vector<Epoch_Obs> &all_ML4)
+/*void count_ML(GMN gmn_data, CRDCARTESIAN site, vector<Epoch_Obs> &all_ML4)
 {
 	int epoch_sum = all_ML4.size();
 	for(int iepoch = 0;iepoch<epoch_sum;iepoch++)
@@ -401,7 +449,7 @@ void count_ML(GMN gmn_data, CRDCARTESIAN site, vector<Epoch_Obs> &all_ML4)
 			}
 		}
 	}
-}
+}*/
 
 bool get_arc(vector<Epoch_Obs> all_ML4, Arc arcs[])
 {
@@ -535,7 +583,7 @@ void detect_cycleslip(vector<Epoch_Obs> &all_ML4, Arc arcs[])
 				qc_pre.mean_mw = (qc_pre.mean_mw*(n-1) + Nw) / n;
 				qc_pre.mw[k] = Nw;
 				qc_pre.tec = tec;
-			}	
+			}
 		}
 	}
 }
@@ -553,7 +601,7 @@ void smooth_P4(vector<Epoch_Obs> &all_ML4, Arc arcs[])
 			int t = 2;
 			for(int iepoch = start_epoch+1;iepoch<=end_epoch;iepoch++)
 			{
-				all_ML4[iepoch].L4[iprn].SP4 = all_ML4[iepoch].L4[iprn].SP4/t + (all_ML4[iepoch-1].L4[iprn].SP4 
+				all_ML4[iepoch].L4[iprn].SP4 = all_ML4[iepoch].L4[iprn].SP4/t + (all_ML4[iepoch-1].L4[iprn].SP4
 					- all_ML4[iepoch].L4[iprn].L4 + all_ML4[iepoch-1].L4[iprn].L4) *(t-1)/t;
 				t++;
 				if(t>240)

@@ -14,25 +14,34 @@ int GMOReader::read_GMO_head(FILE *fp ,GMOHrd *header)
 	sscanf(line,"%lf", &version);
 	if(version < 2 || version >= 4.0)
 	{
+        cout<<"Invalid rinex version!"<<endl;
 		return 0;
 	}
 	header->rinex_version = version;
-
-	while (fgets(line, MaxLine, fp))
+    bool  b_having_read_obs_types = false;
+    bool b_once = false;
+    while (true)
 	{
+        if(!(b_having_read_obs_types == true && b_once == true)) {
+            fgets(line, MaxLine, fp);
+        }
+        b_once = false;
+        if(strstr(line, "END OF HEADER")) {
+            return 1;
+        }
 		if (strstr(line, "APPROX POSITION XYZ"))
 		{
 			sscanf(line, "%lf%lf%lf", &header->approx_pos.x, &header->approx_pos.y, &header->approx_pos.z);
 		}
 		else if (strstr(line, "# / TYPES OF OBSERV") && version < 3.0)
 		{
-			int obs_sum = 0;
+			/*int obs_sum = 0;
 			char obs_type[3];
 
 			int sys_num = 0;
 			sscanf(line+3, "%d", &obs_sum);
 			header->obs_types[sys_num].sum_obs_type = obs_sum;
-			
+
 			if (obs_sum <= 9)
 			{
 				for(int i = 0;i<obs_sum;i++)
@@ -62,11 +71,11 @@ int GMOReader::read_GMO_head(FILE *fp ,GMOHrd *header)
 			{
 				cout<<"(read_GMO) the sum of observations type is more than 18"<<endl;
 				return 0;
-			}
+			}*/
 		}
 		else if (strstr(line, "SYS / # / OBS TYPES") && version >= 3.0)
 		{
-			int obs_sum = 0;
+			/*int obs_sum = 0;
 			char obs_type[4];
 			int sys_num;
 			if (line[0] == 'G')	//read GPS observation type
@@ -115,8 +124,41 @@ int GMOReader::read_GMO_head(FILE *fp ,GMOHrd *header)
 			{
 				cout<<"(read_GMO) the sum of observation type is more than 26"<<endl;
 				return 0;
-			}
-		}
+			}*/
+            char meas_type[4];
+            while(true) {
+                meta_obs_type m_o_t;
+                m_o_t.system_type = line[0];
+                sscanf(line+3, "%d", &m_o_t.sum_obs_type);
+                int count_line = m_o_t.sum_obs_type / 13;
+                int count_yokei = m_o_t.sum_obs_type % 13;
+                for(int i = 0; i < count_line;i++) {
+                    for(int j= 0;j<13;j++) {
+                        strncpy(meas_type, line+4*i+7,4);
+                        meas_type[3] = '\0';
+                        m_o_t.meas_type.push_back(meas_type);
+                    }
+                    fgets(line,MaxLine, fp);
+                }
+                if(count_yokei == 0) {
+                    header->obs_types.obs_type.push_back((m_o_t));
+                }
+                else {
+                    for(int j = 0;j<count_yokei;j++) {
+                        strncpy(meas_type, line+4*j+7,4);
+                        meas_type[3] = '\0';
+                        m_o_t.meas_type.push_back(meas_type);
+                    }
+                    header->obs_types.obs_type.push_back(m_o_t);
+                    fgets(line,MaxLine,fp);
+                }
+                if (!strstr(line, "SYS / # / OBS TYPES")) {
+                    break;
+                }
+            }
+            b_having_read_obs_types = true;
+            b_once = true;
+        }
 		else if (strstr(line, "INTERVAL"))
 		{
 			sscanf(line, "%lf", &header->interval);
@@ -148,9 +190,9 @@ int GMOReader::read_GMO_record(FILE *fp, vector<GMORecord> &record, GMOHrd heade
 	int year, month, day, hour, minute,  epoch_tag,  sate_sum;
 	double second;
 	int sys_num;
-	if(header.rinex_version <= 3.0)
+	if(header.rinex_version < 3.0)
 	{
-		char line[MaxLine+1] = {'\0'};
+		/*char line[MaxLine+1] = {'\0'};
 		char templine[MaxLine+1] = {'\0'};
 		while(fgets(line, MaxLine, fp))
 		{
@@ -247,7 +289,7 @@ int GMOReader::read_GMO_record(FILE *fp, vector<GMORecord> &record, GMOHrd heade
 			int prn_sum = 0;
 			int obs_sum = header.obs_types[0].sum_obs_type;
 			int lines = (int)((obs_sum+4.5)/5.0);
-			
+
 			for(int sate_num = 0;sate_num<sate_sum;sate_num++)
 			{
 				RecGPSObs one_obs;
@@ -273,12 +315,12 @@ int GMOReader::read_GMO_record(FILE *fp, vector<GMORecord> &record, GMOHrd heade
 							temp_line_obs_sum = tail_line_obs_sum;
 						else
 							temp_line_obs_sum = 5;
-						
+
 						int blank_obs_sum = 0;
 						for(int i = 0;i<temp_line_obs_sum;i++)
 						{
 							int length = strlen(line);
-							if(strlen(line) < (16*i + 2)) 
+							if(strlen(line) < (16*i + 2))
 							{
 								temp_line_obs_sum = i;
 								blank_obs_sum = temp_line_obs_sum - i + 1;
@@ -316,7 +358,7 @@ int GMOReader::read_GMO_record(FILE *fp, vector<GMORecord> &record, GMOHrd heade
 
 			one_record.hrd.sum_prn = prn_sum;
 			record.push_back(one_record);
-		}
+		}*/
 	}
 	if(header.rinex_version >= 3.0)
 	{
@@ -373,7 +415,7 @@ int GMOReader::read_GMO_record(FILE *fp, vector<GMORecord> &record, GMOHrd heade
 					}
 
 					//read GPS data
-					if(line[0] == 'G')
+					/*if(line[0] == 'G')
 					{
 						sys_num = 0;
 						//read prn
@@ -396,12 +438,26 @@ int GMOReader::read_GMO_record(FILE *fp, vector<GMORecord> &record, GMOHrd heade
 						}
 						one_record.GPS_obs.push_back(one_obs);
 						prn_sum++;
-					}
+					}*/
+                    char prn[4];
+                    RecGPSObs one_obs;
+                    strncpy(prn, line,3);prn[3] = '\0';
+                    one_record.hrd.sat_prn.push_back(prn);
+                    double value_0;
+                    int designated;
+                    //int num_current_sys = return_num_of_sat(prn[0],header);
+                    int num_current_sys = header.obs_types.return_designated_sum_obs_type(prn[0],designated);
+                    for(int i = 0;i< num_current_sys;i++) {
+                        strncpy(templine, line+3+16*i,14);templine[14] = '\0';
+                        value_0 = atof(templine);
+                        one_obs.obs.push_back((value_0));
+                    }
+                    one_record.GPS_obs.push_back(one_obs);
 				}
 				//count sum of GPS satellite only
 				if(record_tag == true)
 				{
-					one_record.hrd.sum_prn = prn_sum;
+					//one_record.hrd.sum_prn = prn_sum;
 					record.push_back(one_record);
 				}
 			}
@@ -414,15 +470,25 @@ int GMOReader::read_GMO_record(FILE *fp, vector<GMORecord> &record, GMOHrd heade
 	return 1;
 }
 
+/*int return_num_of_sat(char prn, GMOHrd header) {
+    int num = 0;
+    for(int i =0;i< header.obs_types.obs_type.size();i++) {
+        if(prn == header.obs_types.obs_type[i].system_type) {
+            num = header.obs_types.obs_type[i].sum_obs_type;
+            break;
+        }
+    }
+    return num;
+}*/
 bool GMOReader::read_epoch_record(FILE *fp, GMORecord *epoch_record, GMOHrd header)
 {
 	char line[MaxLine+1], templine[MaxLine+1];
 	int year, month, day, hour, minute,  epoch_tag,  sate_sum;
 	double second;
 	int sys_num;
-	if(header.rinex_version <= 3.0)
+	if(header.rinex_version < 3.0)
 	{
-		while(fgets(line, MaxLine, fp))
+		/*while(fgets(line, MaxLine, fp))
 		{
 			if(strstr(line, "COMMENT"))
 			{
@@ -548,7 +614,7 @@ bool GMOReader::read_epoch_record(FILE *fp, GMORecord *epoch_record, GMOHrd head
 						for(int i = 0;i<temp_line_obs_sum;i++)
 						{
 							int length = strlen(line);
-							if(length < (16*i + 2)) 
+							if(length < (16*i + 2))
 							{
 								temp_line_obs_sum = i;
 								blank_obs_sum = temp_line_obs_sum - i + 1;
@@ -587,7 +653,7 @@ bool GMOReader::read_epoch_record(FILE *fp, GMORecord *epoch_record, GMOHrd head
 			one_record.hrd.sum_prn = prn_sum;
 			*epoch_record = one_record;
 			return true;
-		}
+		}*/
 	}
 	if(header.rinex_version >= 3.0)
 	{
@@ -640,7 +706,7 @@ bool GMOReader::read_epoch_record(FILE *fp, GMORecord *epoch_record, GMOHrd head
 					}
 
 					//read GPS data
-					if(line[0] == 'G')
+					/*if(line[0] == 'G')
 					{
 						sys_num = 0;
 						//read prn
@@ -663,12 +729,26 @@ bool GMOReader::read_epoch_record(FILE *fp, GMORecord *epoch_record, GMOHrd head
 						}
 						one_record.GPS_obs.push_back(one_obs);
 						prn_sum++;
-					}
+					}*/
+
+                    char prn[4];
+                    RecGPSObs one_obs;
+                    strncpy(prn, line,3);prn[3] = '\0';
+                    one_record.hrd.sat_prn.push_back(prn);
+                    double value_0;
+                    int designated;
+                    int num_current_sys = header.obs_types.return_designated_sum_obs_type(prn[0],designated);
+                    for(int i = 0;i< num_current_sys;i++) {
+                        strncpy(templine, line+3+16*i,14);templine[14] = '\0';
+                        value_0 = atof(templine);
+                        one_obs.obs.push_back(value_0);
+                    }
+                    one_record.GPS_obs.push_back(one_obs);
 				}
 				//count sum of GPS satellite only
 				if(record_tag == true)
 				{
-					one_record.hrd.sum_prn = prn_sum;
+					//one_record.hrd.sum_prn = prn_sum;
 					*epoch_record = one_record;
 					return true;
 				}

@@ -2,7 +2,7 @@
 #define _brdc_orb_H
 
 
-#include "global_variables.h"
+//#include "global_variables.h"
 #include "read_GMN.h"
 
 //get the position of satellite

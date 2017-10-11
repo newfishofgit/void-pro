@@ -1,8 +1,9 @@
 #ifndef _global_variables_H
 #define _global_variables_H
 
-#include "matrix.cc"
-#include "cmatrix"
+//#include "matrix.cc"
+//#include "cmatrix"
+#include "matrix2.hxx"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +13,7 @@
 #include <vector>
 #include <algorithm>
 #include "Timestruct.h"
-#include "coordinate_system_difine.h"
+//#include "coordinate_system_difine.h"
 #include "coordinate_transformation.h"
 using namespace std;
 
